@@ -1,11 +1,10 @@
 import { createClient } from '@/lib/supabase/server'
-import { TicketGrid } from '@/components/rifa/TicketGrid'
 import { TicketSelector } from '@/components/rifa/TicketSelector'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import {
   CalendarDays, Trophy, Users, Ticket,
   CheckCircle2, CreditCard, MessageCircle,
-  ChevronRight, Lock
+  ChevronRight, Gift, Star, Lock
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -26,27 +25,38 @@ export default async function HomePage() {
     ? await supabase.from('premios').select('*').eq('rifa_id', rifa.id).order('ordem')
     : { data: [] }
 
+  // Contas premiadas — lista de prêmios surpresa
+  const { data: contasPremiadas } = rifa
+    ? await supabase
+        .from('contas_premiadas')
+        .select('*, premios(titulo, descricao, imagem_url)')
+        .eq('rifa_id', rifa.id)
+        .eq('ativo', true)
+        .order('numero_bilhete')
+    : { data: [] }
+
+  // Bilhetes das contas premiadas que já foram comprados (para mostrar os ganhadores)
+  const numerosPremiados = contasPremiadas?.map((c: any) => c.numero_bilhete) || []
+  const { data: bilhetesPremiados } = rifa && numerosPremiados.length > 0
+    ? await supabase
+        .from('bilhetes')
+        .select('numero, status, profiles(nome, whatsapp)')
+        .eq('rifa_id', rifa.id)
+        .in('numero', numerosPremiados)
+        .eq('status', 'pago')
+    : { data: [] }
+
+  const ganhadorPorNumero: Record<number, any> = {}
+  bilhetesPremiados?.forEach((b: any) => {
+    ganhadorPorNumero[b.numero] = b.profiles
+  })
+
   const { data: ganhadores } = await supabase
     .from('ganhadores')
     .select('*, profiles(nome), premios(titulo), rifas(titulo)')
     .eq('publicar', true)
     .order('premiado_em', { ascending: false })
     .limit(5)
-
-  // Stats de bilhetes
-  let totalBilhetes = 0, pagos = 0, reservados = 0
-  if (rifa) {
-    const { data: stats } = await supabase
-      .from('bilhetes')
-      .select('status')
-      .eq('rifa_id', rifa.id)
-    totalBilhetes = stats?.length || 0
-    pagos = stats?.filter((b) => b.status === 'pago').length || 0
-    reservados = stats?.filter((b) => b.status === 'reservado').length || 0
-  }
-  const vendidos = pagos + reservados
-  const pct = totalBilhetes > 0 ? Math.round((vendidos / totalBilhetes) * 100) : 0
-  const disponiveis = totalBilhetes - vendidos
 
   if (!rifa) {
     return (
@@ -70,6 +80,9 @@ export default async function HomePage() {
 
   const premio1 = premios?.find((p: any) => p.ordem === 1)
   const outrosPremios = premios?.filter((p: any) => p.ordem !== 1) || []
+
+  const totalContasDisp = contasPremiadas?.filter((c: any) => !ganhadorPorNumero[c.numero_bilhete]).length || 0
+  const totalContasGanhas = contasPremiadas?.filter((c: any) => !!ganhadorPorNumero[c.numero_bilhete]).length || 0
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -106,7 +119,6 @@ export default async function HomePage() {
 
         <div className="relative mx-auto max-w-5xl px-4 py-12 sm:py-16">
           <div className="max-w-2xl space-y-4">
-            {/* Badge data */}
             {rifa.data_sorteio && (
               <div className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-medium text-white backdrop-blur-sm">
                 <CalendarDays className="h-3.5 w-3.5 text-green-400" />
@@ -138,34 +150,16 @@ export default async function HomePage() {
                   <span className="text-xs text-slate-300">dias restantes</span>
                 </div>
               )}
-              <div className="flex items-center gap-2 rounded-xl bg-white/10 px-4 py-2.5 backdrop-blur-sm">
-                <span className="text-2xl font-black text-white">{totalBilhetes.toLocaleString('pt-BR')}</span>
-                <span className="text-xs text-slate-300">bilhetes totais</span>
-              </div>
+              {contasPremiadas && contasPremiadas.length > 0 && (
+                <div className="flex items-center gap-2 rounded-xl bg-yellow-400/20 border border-yellow-400/30 px-4 py-2.5 backdrop-blur-sm">
+                  <Star className="h-4 w-4 text-yellow-400" />
+                  <span className="text-sm font-bold text-yellow-300">{totalContasDisp} prêmios surpresa disponíveis</span>
+                </div>
+              )}
             </div>
           </div>
         </div>
       </section>
-
-      {/* ── Barra de progresso ── */}
-      <div className="bg-white border-b border-slate-100 shadow-sm">
-        <div className="mx-auto max-w-5xl px-4 py-4">
-          <div className="flex items-center justify-between text-sm mb-2">
-            <span className="font-semibold text-slate-700">{vendidos.toLocaleString('pt-BR')} bilhetes vendidos</span>
-            <span className="font-bold text-green-600">{pct}%</span>
-          </div>
-          <div className="h-3 w-full rounded-full bg-slate-100 overflow-hidden">
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-green-500 to-emerald-400 transition-all shadow-sm"
-              style={{ width: `${pct}%` }}
-            />
-          </div>
-          <div className="flex justify-between text-xs text-slate-400 mt-1.5">
-            <span>{pagos.toLocaleString('pt-BR')} pagos · {reservados.toLocaleString('pt-BR')} reservados</span>
-            <span>{disponiveis.toLocaleString('pt-BR')} disponíveis</span>
-          </div>
-        </div>
-      </div>
 
       {/* ── Conteúdo principal ── */}
       <main className="mx-auto max-w-5xl px-4 py-8 space-y-8">
@@ -177,7 +171,7 @@ export default async function HomePage() {
             <div className="rounded-2xl bg-white shadow-sm border border-slate-100 p-6">
               <h2 className="text-lg font-bold text-slate-800 mb-1">Escolha seus bilhetes</h2>
               <p className="text-sm text-slate-500 mb-5">Selecione a quantidade e garanta sua participação</p>
-              <TicketSelector preco={rifa.preco_bilhete} disponiveis={disponiveis} rifaId={rifa.id} />
+              <TicketSelector preco={rifa.preco_bilhete} disponiveis={rifa.total_bilhetes} rifaId={rifa.id} />
             </div>
           </div>
 
@@ -216,49 +210,123 @@ export default async function HomePage() {
                 ))}
               </div>
             )}
+          </div>
+        </div>
 
-            {/* PIX info */}
-            {rifa.pix_chave && (
-              <div className="rounded-2xl bg-blue-50 border border-blue-100 p-4">
-                <div className="flex items-center gap-2 mb-1">
-                  <Lock className="h-4 w-4 text-blue-500" />
-                  <span className="text-xs font-semibold text-blue-700 uppercase tracking-wide">Pagamento via PIX</span>
+        {/* ── Contas Premiadas ── */}
+        {contasPremiadas && contasPremiadas.length > 0 && (
+          <div className="rounded-2xl bg-white shadow-sm border border-slate-100 overflow-hidden">
+            {/* Cabeçalho */}
+            <div className="bg-gradient-to-r from-yellow-400 to-orange-500 px-6 py-5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/20">
+                    <Gift className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-extrabold text-white">Prêmios Surpresa</h2>
+                    <p className="text-xs text-yellow-100">Bilhetes especiais com premiação instantânea!</p>
+                  </div>
                 </div>
-                <p className="text-sm font-mono text-blue-800 break-all">{rifa.pix_chave}</p>
-                {rifa.pix_nome && <p className="text-xs text-blue-600 mt-0.5">Titular: {rifa.pix_nome}</p>}
+                <div className="text-right">
+                  <p className="text-2xl font-black text-white">{contasPremiadas.length}</p>
+                  <p className="text-xs text-yellow-100">premiações</p>
+                </div>
               </div>
-            )}
-          </div>
-        </div>
+            </div>
 
-        {/* ── Grade de bilhetes ── */}
-        <div className="rounded-2xl bg-white shadow-sm border border-slate-100 p-6">
-          <div className="flex items-center justify-between mb-5">
-            <div>
-              <h2 className="text-lg font-bold text-slate-800">Todos os bilhetes</h2>
-              <p className="text-sm text-slate-500 mt-0.5">Atualizado em tempo real</p>
-            </div>
-            <div className="flex flex-wrap gap-2 text-xs">
-              <span className="flex items-center gap-1.5 rounded-full bg-white border border-slate-200 px-2.5 py-1">
-                <span className="h-2.5 w-2.5 rounded-sm bg-white border border-slate-300" /> Disponível
-              </span>
-              <span className="flex items-center gap-1.5 rounded-full bg-yellow-50 border border-yellow-200 px-2.5 py-1 text-yellow-700">
-                <span className="h-2.5 w-2.5 rounded-sm bg-yellow-300" /> Reservado
-              </span>
-              <span className="flex items-center gap-1.5 rounded-full bg-green-50 border border-green-200 px-2.5 py-1 text-green-700">
-                <span className="h-2.5 w-2.5 rounded-sm bg-green-500" /> Pago
-              </span>
+            <div className="p-6">
+              {/* Alerta de surpresa */}
+              <div className="mb-5 rounded-xl bg-yellow-50 border border-yellow-200 px-4 py-3 flex items-start gap-3">
+                <Lock className="h-4 w-4 text-yellow-600 mt-0.5 shrink-0" />
+                <p className="text-sm text-yellow-800">
+                  <span className="font-semibold">Prêmio surpresa!</span> Ao comprar seu bilhete, você pode ser contemplado instantaneamente — sem esperar o sorteio. Os números premiados são revelados apenas no momento da compra.
+                </p>
+              </div>
+
+              {/* Grid de contas */}
+              <div className="grid gap-3 sm:grid-cols-2">
+                {contasPremiadas.map((conta: any) => {
+                  const ganhador = ganhadorPorNumero[conta.numero_bilhete]
+                  return (
+                    <div
+                      key={conta.id}
+                      className={[
+                        'relative rounded-xl border-2 p-4 transition-all',
+                        ganhador
+                          ? 'border-green-200 bg-green-50'
+                          : 'border-yellow-200 bg-yellow-50',
+                      ].join(' ')}
+                    >
+                      {/* Badge status */}
+                      <div className={[
+                        'absolute -top-2.5 right-3 rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wide shadow-sm',
+                        ganhador
+                          ? 'bg-green-500 text-white'
+                          : 'bg-yellow-400 text-yellow-900',
+                      ].join(' ')}>
+                        {ganhador ? '🎉 Ganho!' : '✨ Disponível'}
+                      </div>
+
+                      <div className="flex items-start gap-3">
+                        <div className={[
+                          'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl font-black text-sm',
+                          ganhador ? 'bg-green-200 text-green-700' : 'bg-yellow-200 text-yellow-700',
+                        ].join(' ')}>
+                          <Star className="h-5 w-5" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-bold text-slate-800 text-sm leading-tight">
+                            {conta.descricao_premio}
+                          </p>
+                          {conta.premios?.titulo && conta.premios.titulo !== conta.descricao_premio && (
+                            <p className="text-xs text-slate-500 mt-0.5">{conta.premios.titulo}</p>
+                          )}
+                          {ganhador ? (
+                            <div className="mt-2 flex items-center gap-1.5">
+                              <div className="flex h-5 w-5 items-center justify-center rounded-full bg-green-500 text-white text-[9px] font-bold">
+                                ✓
+                              </div>
+                              <p className="text-xs font-semibold text-green-700">
+                                {ganhador.nome
+                                  ? `${ganhador.nome.split(' ')[0]} já ganhou!`
+                                  : 'Já foi ganho!'}
+                              </p>
+                            </div>
+                          ) : (
+                            <p className="text-xs text-yellow-700 mt-1.5 font-medium">
+                              Pode ser o seu próximo bilhete! 🍀
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+
+              {/* Resumo */}
+              {(totalContasDisp > 0 || totalContasGanhas > 0) && (
+                <div className="mt-4 flex items-center justify-center gap-6 rounded-xl bg-slate-50 border border-slate-100 py-3">
+                  <div className="text-center">
+                    <p className="text-lg font-black text-yellow-500">{totalContasDisp}</p>
+                    <p className="text-xs text-slate-500">disponíveis</p>
+                  </div>
+                  <div className="h-8 w-px bg-slate-200" />
+                  <div className="text-center">
+                    <p className="text-lg font-black text-green-500">{totalContasGanhas}</p>
+                    <p className="text-xs text-slate-500">já ganhos</p>
+                  </div>
+                  <div className="h-8 w-px bg-slate-200" />
+                  <div className="text-center">
+                    <p className="text-lg font-black text-slate-700">{contasPremiadas.length}</p>
+                    <p className="text-xs text-slate-500">total</p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
-          <TicketGrid rifaId={rifa.id} />
-          <div className="mt-5 text-center">
-            <Link href="/login"
-              className="inline-flex items-center gap-2 rounded-xl bg-green-600 px-6 py-3 text-sm font-bold text-white shadow-md shadow-green-100 hover:bg-green-700 transition-all">
-              🎟️ Escolher meu bilhete
-              <ChevronRight className="h-4 w-4" />
-            </Link>
-          </div>
-        </div>
+        )}
 
         {/* ── Como participar ── */}
         <div className="rounded-2xl bg-white shadow-sm border border-slate-100 p-6">
@@ -277,7 +345,7 @@ export default async function HomePage() {
                 color: 'bg-blue-100 text-blue-600',
                 step: '2',
                 title: 'Escolha e pague via PIX',
-                desc: 'Selecione seus números da sorte e pague na hora.',
+                desc: 'Selecione a quantidade de bilhetes e pague na hora.',
               },
               {
                 icon: Trophy,
@@ -305,7 +373,7 @@ export default async function HomePage() {
           </div>
         </div>
 
-        {/* ── Ganhadores anteriores ── */}
+        {/* ── Ganhadores do sorteio ── */}
         {ganhadores && ganhadores.length > 0 && (
           <div className="rounded-2xl bg-white shadow-sm border border-slate-100 p-6">
             <h2 className="text-lg font-bold text-slate-800 mb-4">🎉 Contemplados</h2>
