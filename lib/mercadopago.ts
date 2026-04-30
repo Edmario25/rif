@@ -1,15 +1,5 @@
 import MercadoPagoConfig, { Payment } from 'mercadopago'
 
-if (!process.env.MP_ACCESS_TOKEN) {
-  console.warn('[MercadoPago] MP_ACCESS_TOKEN não configurado')
-}
-
-export const mpClient = new MercadoPagoConfig({
-  accessToken: process.env.MP_ACCESS_TOKEN || '',
-})
-
-export const mpPayment = new Payment(mpClient)
-
 export interface CriarPixParams {
   valor: number
   descricao: string
@@ -19,7 +9,15 @@ export interface CriarPixParams {
 }
 
 export async function criarPagamentoPix(params: CriarPixParams) {
+  const token = process.env.MP_ACCESS_TOKEN
+  if (!token) {
+    throw new Error('MP_ACCESS_TOKEN não configurado no servidor')
+  }
+
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+
+  const client = new MercadoPagoConfig({ accessToken: token })
+  const mpPayment = new Payment(client)
 
   const result = await mpPayment.create({
     body: {
