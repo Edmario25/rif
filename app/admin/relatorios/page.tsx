@@ -24,7 +24,10 @@ export default async function RelatoriosPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">📊 Relatórios</h1>
+      <div>
+        <h1 className="text-2xl font-bold text-slate-800">Relatórios</h1>
+        <p className="text-sm text-slate-500 mt-0.5">Estatísticas detalhadas e exportação de dados</p>
+      </div>
       <RelatoriosClient rifas={rifas || []} bilhetes={bilhetesStats} rifaAtiva={rifaAtiva} />
     </div>
   )

@@ -71,42 +71,54 @@ export function CampanhasAdminClient({ rifas, initialCampanhas }: { rifas: any[]
     <div className="space-y-6">
       <CampanhaForm rifas={rifas} onSuccess={onSuccess} />
 
-      <div className="space-y-3">
-        <h2 className="font-semibold text-lg">Histórico de campanhas</h2>
-        {campanhas.length === 0 && <p className="text-muted-foreground text-sm">Nenhuma campanha criada.</p>}
-        {campanhas.map((c) => (
-          <Card key={c.id}>
-            <CardContent className="flex flex-col gap-2 p-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="font-medium">{c.titulo}</p>
-                <p className="text-xs text-muted-foreground">
-                  {c.tipo.replace('_', ' ')} {c.rifas?.titulo ? `· ${c.rifas.titulo}` : ''}
-                  {c.agendado_para ? ` · Agendada: ${formatDate(c.agendado_para)}` : ''}
-                </p>
-                {c.status === 'concluida' && (
-                  <p className="text-xs text-green-600 mt-1">✓ {c.total_enviados} enviados · {c.total_erros} erros</p>
-                )}
-                {c.status === 'enviando' && (
-                  <p className="text-xs text-yellow-600 mt-1 flex items-center gap-1">
-                    <Loader2 className="h-3 w-3 animate-spin" /> Enviando… {c.total_enviados} enviados
+      {/* Histórico */}
+      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+        <div className="px-5 py-4 border-b border-slate-100">
+          <h2 className="text-sm font-semibold text-slate-700">Histórico de campanhas</h2>
+        </div>
+        {campanhas.length === 0 ? (
+          <div className="flex flex-col items-center py-12 text-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 mb-3">
+              <Send className="h-6 w-6 text-slate-300" />
+            </div>
+            <p className="text-sm text-slate-500">Nenhuma campanha criada ainda.</p>
+          </div>
+        ) : (
+          <div className="divide-y divide-slate-50">
+            {campanhas.map((c) => (
+              <div key={c.id} className="flex flex-col gap-2 px-5 py-4 hover:bg-slate-50 transition-colors sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="font-semibold text-slate-800 text-sm">{c.titulo}</p>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    {c.tipo.replace('_', ' ')}
+                    {c.rifas?.titulo ? ` · ${c.rifas.titulo}` : ''}
+                    {c.agendado_para ? ` · Agendada: ${formatDate(c.agendado_para)}` : ''}
                   </p>
-                )}
+                  {c.status === 'concluida' && (
+                    <p className="text-xs text-green-600 mt-1">✓ {c.total_enviados} enviados · {c.total_erros} erros</p>
+                  )}
+                  {c.status === 'enviando' && (
+                    <p className="text-xs text-yellow-600 mt-1 flex items-center gap-1">
+                      <Loader2 className="h-3 w-3 animate-spin" /> Enviando… {c.total_enviados} enviados
+                    </p>
+                  )}
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium border-0 ${statusColor[c.status]}`}>
+                    {c.status}
+                  </span>
+                  {c.status === 'rascunho' && (
+                    <Button size="sm" onClick={() => disparar(c.id)} disabled={disparando === c.id}
+                      className="bg-green-600 hover:bg-green-700 h-8">
+                      {disparando === c.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+                      <span className="ml-1.5">Disparar</span>
+                    </Button>
+                  )}
+                </div>
               </div>
-              <div className="flex items-center gap-3">
-                <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusColor[c.status]}`}>
-                  {c.status}
-                </span>
-                {c.status === 'rascunho' && (
-                  <Button size="sm" onClick={() => disparar(c.id)} disabled={disparando === c.id}
-                    className="bg-green-600 hover:bg-green-700">
-                    {disparando === c.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                    <span className="ml-1">Disparar</span>
-                  </Button>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )

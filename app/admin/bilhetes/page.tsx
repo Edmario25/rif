@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { toast } from 'sonner'
-import { Star, CheckCircle2, X, Eye } from 'lucide-react'
+import { Star, CheckCircle2, X, Eye, Loader2 } from 'lucide-react'
 
 interface Bilhete {
   id: string
@@ -99,50 +99,84 @@ export default function BilhetesAdminPage() {
     return true
   })
 
-  if (loading) return <div className="text-center py-16 text-muted-foreground">Carregando bilhetes…</div>
+  if (loading) return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-slate-800">Gestão de Bilhetes</h1>
+        <p className="text-sm text-slate-500 mt-0.5">Confirme pagamentos e gerencie reservas</p>
+      </div>
+      <div className="flex items-center justify-center py-24 bg-white rounded-xl shadow-sm">
+        <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
+      </div>
+    </div>
+  )
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Gestão de Bilhetes</h1>
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-bold text-slate-800">Gestão de Bilhetes</h1>
+        <p className="text-sm text-slate-500 mt-0.5">Confirme pagamentos e gerencie reservas</p>
+      </div>
 
       {/* Filtros */}
-      <div className="flex flex-wrap gap-3">
-        <Select value={rifaFiltro} onValueChange={setRifaFiltro}>
-          <SelectTrigger className="w-48"><SelectValue placeholder="Rifa" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="todas">Todas as rifas</SelectItem>
-            {rifas.map((r) => <SelectItem key={r.id} value={r.id}>{r.titulo}</SelectItem>)}
-          </SelectContent>
-        </Select>
-        <Select value={statusFiltro} onValueChange={setStatusFiltro}>
-          <SelectTrigger className="w-40"><SelectValue placeholder="Status" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="todos">Todos</SelectItem>
-            <SelectItem value="reservado">Reservados</SelectItem>
-            <SelectItem value="pago">Pagos</SelectItem>
-          </SelectContent>
-        </Select>
-        <Input className="w-56" placeholder="Buscar por nome ou número…" value={busca} onChange={(e) => setBusca(e.target.value)} />
-        <span className="self-center text-sm text-muted-foreground">{filtered.length} bilhetes</span>
+      <div className="bg-white rounded-xl shadow-sm p-4">
+        <div className="flex flex-wrap gap-3 items-center">
+          <Select value={rifaFiltro} onValueChange={setRifaFiltro}>
+            <SelectTrigger className="w-48 border-slate-200"><SelectValue placeholder="Rifa" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todas">Todas as rifas</SelectItem>
+              {rifas.map((r) => <SelectItem key={r.id} value={r.id}>{r.titulo}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Select value={statusFiltro} onValueChange={setStatusFiltro}>
+            <SelectTrigger className="w-40 border-slate-200"><SelectValue placeholder="Status" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos</SelectItem>
+              <SelectItem value="reservado">Reservados</SelectItem>
+              <SelectItem value="pago">Pagos</SelectItem>
+            </SelectContent>
+          </Select>
+          <Input className="w-56 border-slate-200" placeholder="Buscar por nome ou número…"
+            value={busca} onChange={(e) => setBusca(e.target.value)} />
+          <div className="ml-auto flex items-center gap-4 text-xs text-slate-500">
+            <span className="flex items-center gap-1.5">
+              <span className="inline-block h-3 w-3 rounded bg-green-500" /> Pago
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="inline-block h-3 w-3 rounded bg-yellow-200 border border-yellow-300" /> Reservado
+            </span>
+            <span className="font-semibold text-slate-700">{filtered.length} bilhetes</span>
+          </div>
+        </div>
       </div>
 
       {/* Grade */}
-      <div className="grid grid-cols-10 gap-1 max-h-[60vh] overflow-y-auto border rounded-lg p-3 bg-white">
-        {filtered.map((b) => (
-          <button
-            key={b.id}
-            onClick={() => setSelected(b)}
-            className={cn(
-              'relative flex h-10 w-full items-center justify-center rounded border text-xs font-medium transition-colors',
-              b.status === 'pago' ? 'bg-green-500 border-green-600 text-white hover:bg-green-600'
-                : 'bg-yellow-100 border-yellow-300 hover:bg-yellow-200'
-            )}
-          >
-            {b.conta_premiada && <Star className="absolute top-0.5 right-0.5 h-2 w-2 fill-yellow-400 text-yellow-400" />}
-            {b.numero}
-          </button>
-        ))}
-        {filtered.length === 0 && <p className="col-span-10 text-center py-8 text-muted-foreground">Nenhum bilhete encontrado.</p>}
+      <div className="bg-white rounded-xl shadow-sm p-4">
+        <div className="grid grid-cols-10 gap-1 max-h-[60vh] overflow-y-auto">
+          {filtered.map((b) => (
+            <button
+              key={b.id}
+              onClick={() => setSelected(b)}
+              className={cn(
+                'relative flex h-10 w-full items-center justify-center rounded border text-xs font-medium transition-colors',
+                b.status === 'pago' ? 'bg-green-500 border-green-600 text-white hover:bg-green-600'
+                  : 'bg-yellow-100 border-yellow-300 hover:bg-yellow-200'
+              )}
+            >
+              {b.conta_premiada && <Star className="absolute top-0.5 right-0.5 h-2 w-2 fill-yellow-400 text-yellow-400" />}
+              {b.numero}
+            </button>
+          ))}
+          {filtered.length === 0 && (
+            <div className="col-span-10 flex flex-col items-center py-12">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-slate-100 mb-3">
+                <CheckCircle2 className="h-7 w-7 text-slate-300" />
+              </div>
+              <p className="text-sm text-slate-500">Nenhum bilhete encontrado.</p>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Modal detalhes */}

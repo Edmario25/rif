@@ -75,7 +75,6 @@ export function TicketGrid({ rifaId, onSelect }: TicketGridProps) {
         <Badge variant="outline" className="border-gray-200 bg-white">⬜ {disponiveis} disponíveis</Badge>
         <Badge variant="outline" className="border-yellow-300 bg-yellow-100 text-yellow-800">🟡 {reservados} reservados</Badge>
         <Badge variant="outline" className="border-green-600 bg-green-500 text-white">🟢 {pagos} pagos</Badge>
-        <Badge variant="outline" className="border-yellow-400 bg-white">⭐ conta premiada</Badge>
       </div>
 
       {/* Grade */}

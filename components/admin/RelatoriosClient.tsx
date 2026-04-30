@@ -61,26 +61,30 @@ export function RelatoriosClient({ rifas, bilhetes, rifaAtiva }: RelatoriosClien
     <div className="space-y-6">
       {rifaAtiva && (
         <>
+          {/* KPI cards */}
           <div className="grid gap-4 sm:grid-cols-3">
-            <Card>
-              <CardHeader className="pb-1"><CardTitle className="text-sm text-muted-foreground">Arrecadado</CardTitle></CardHeader>
-              <CardContent><p className="text-2xl font-bold text-green-600">{formatCurrency(totalArrecadado)}</p></CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-1"><CardTitle className="text-sm text-muted-foreground">Bilhetes pagos</CardTitle></CardHeader>
-              <CardContent><p className="text-2xl font-bold">{pagos.length} / {rifaAtiva.total_bilhetes}</p></CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-1"><CardTitle className="text-sm text-muted-foreground">Reservados</CardTitle></CardHeader>
-              <CardContent><p className="text-2xl font-bold text-yellow-600">{reservados.length}</p></CardContent>
-            </Card>
+            <div className="bg-white rounded-xl shadow-sm p-5">
+              <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Total arrecadado</p>
+              <p className="text-2xl font-bold text-green-600 mt-1">{formatCurrency(totalArrecadado)}</p>
+              <p className="text-xs text-slate-400 mt-0.5">{rifaAtiva.titulo}</p>
+            </div>
+            <div className="bg-white rounded-xl shadow-sm p-5">
+              <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Bilhetes pagos</p>
+              <p className="text-2xl font-bold text-slate-800 mt-1">{pagos.length} <span className="text-base font-normal text-slate-400">/ {rifaAtiva.total_bilhetes}</span></p>
+              <p className="text-xs text-slate-400 mt-0.5">{Math.round((pagos.length / rifaAtiva.total_bilhetes) * 100)}% do total</p>
+            </div>
+            <div className="bg-white rounded-xl shadow-sm p-5">
+              <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Reservados</p>
+              <p className="text-2xl font-bold text-yellow-500 mt-1">{reservados.length}</p>
+              <p className="text-xs text-slate-400 mt-0.5">Aguardando confirmação</p>
+            </div>
           </div>
 
           <div className="flex gap-3">
-            <Button variant="outline" onClick={exportarBilhetes}>
+            <Button variant="outline" onClick={exportarBilhetes} className="border-slate-200 text-slate-700 hover:bg-slate-50">
               <Download className="h-4 w-4 mr-2" /> Exportar bilhetes CSV
             </Button>
-            <Button variant="outline" onClick={exportarRifas}>
+            <Button variant="outline" onClick={exportarRifas} className="border-slate-200 text-slate-700 hover:bg-slate-50">
               <Download className="h-4 w-4 mr-2" /> Exportar rifas CSV
             </Button>
           </div>
@@ -89,29 +93,46 @@ export function RelatoriosClient({ rifas, bilhetes, rifaAtiva }: RelatoriosClien
 
       {/* Tabela de bilhetes pagos */}
       {pagos.length > 0 && (
-        <div className="rounded-lg border bg-white overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="border-b bg-gray-50">
-              <tr>
-                <th className="px-4 py-3 text-left font-medium">Nº</th>
-                <th className="px-4 py-3 text-left font-medium">Cliente</th>
-                <th className="px-4 py-3 text-left font-medium">WhatsApp</th>
-                <th className="px-4 py-3 text-left font-medium">Pago em</th>
-                <th className="px-4 py-3 text-left font-medium">C. Premiada</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {pagos.map((b) => (
-                <tr key={b.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-2 font-medium">{b.numero}</td>
-                  <td className="px-4 py-2">{b.profiles?.nome || '—'}</td>
-                  <td className="px-4 py-2">{b.profiles?.whatsapp || '—'}</td>
-                  <td className="px-4 py-2">{b.pago_em ? formatDate(b.pago_em) : '—'}</td>
-                  <td className="px-4 py-2">{b.conta_premiada ? '⭐ Sim' : '—'}</td>
+        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+          <div className="px-5 py-4 border-b border-slate-100">
+            <h2 className="text-sm font-semibold text-slate-700">Bilhetes pagos — {rifaAtiva?.titulo}</h2>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-slate-100 bg-slate-50">
+                  <th className="text-left px-5 py-3 font-medium text-slate-500 text-xs">Nº</th>
+                  <th className="text-left px-5 py-3 font-medium text-slate-500 text-xs">Cliente</th>
+                  <th className="text-left px-5 py-3 font-medium text-slate-500 text-xs">WhatsApp</th>
+                  <th className="text-left px-5 py-3 font-medium text-slate-500 text-xs">Pago em</th>
+                  <th className="text-left px-5 py-3 font-medium text-slate-500 text-xs">C. Premiada</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {pagos.map((b) => (
+                  <tr key={b.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="px-5 py-3 font-semibold text-slate-800">#{b.numero}</td>
+                    <td className="px-5 py-3 text-slate-600">{b.profiles?.nome || '—'}</td>
+                    <td className="px-5 py-3 text-slate-600">{b.profiles?.whatsapp || '—'}</td>
+                    <td className="px-5 py-3 text-xs text-slate-400">{b.pago_em ? formatDate(b.pago_em) : '—'}</td>
+                    <td className="px-5 py-3 text-xs">
+                      {b.conta_premiada ? <span className="text-yellow-600 font-medium">⭐ Sim</span> : <span className="text-slate-300">—</span>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {!rifaAtiva && (
+        <div className="flex flex-col items-center justify-center py-20 bg-white rounded-xl shadow-sm">
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-slate-100 mb-3">
+            <Download className="h-7 w-7 text-slate-300" />
+          </div>
+          <p className="text-slate-500 text-sm">Nenhuma rifa ativa no momento.</p>
+          <p className="text-xs text-slate-400 mt-1">Ative uma rifa para visualizar relatórios.</p>
         </div>
       )}
     </div>

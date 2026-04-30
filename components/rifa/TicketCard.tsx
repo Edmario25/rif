@@ -1,5 +1,4 @@
 import { cn } from '@/lib/utils'
-import { Star } from 'lucide-react'
 
 type TicketStatus = 'disponivel' | 'reservado' | 'pago' | 'cancelado'
 
@@ -18,7 +17,7 @@ const statusConfig = {
   cancelado:  'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed',
 }
 
-export function TicketCard({ numero, status, contaPremiada, onClick, disabled }: TicketCardProps) {
+export function TicketCard({ numero, status, contaPremiada: _hidden, onClick, disabled }: TicketCardProps) {
   return (
     <button
       type="button"
@@ -30,9 +29,6 @@ export function TicketCard({ numero, status, contaPremiada, onClick, disabled }:
       )}
       title={`Bilhete #${numero} — ${status}`}
     >
-      {contaPremiada && (
-        <Star className="absolute top-0.5 right-0.5 h-2.5 w-2.5 fill-yellow-400 text-yellow-400" />
-      )}
       {numero}
     </button>
   )

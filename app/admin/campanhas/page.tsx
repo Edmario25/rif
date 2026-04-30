@@ -11,7 +11,10 @@ export default async function CampanhasAdminPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">📣 Campanhas</h1>
+      <div>
+        <h1 className="text-2xl font-bold text-slate-800">Campanhas</h1>
+        <p className="text-sm text-slate-500 mt-0.5">Envie mensagens em massa para os participantes via WhatsApp</p>
+      </div>
       <CampanhasAdminClient rifas={rifas || []} initialCampanhas={campanhas || []} />
     </div>
   )
